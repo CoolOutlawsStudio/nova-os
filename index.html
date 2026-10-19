@@ -499,7 +499,7 @@ const ACCENTS=['#4f8cff','#8b5cf6','#ec4899','#ef4444','#f97316','#eab308','#22c
 const DEFAULTS={osName:'Nova OS',user:'Toml',avatar:'😎',avatarImg:'',pass:'',lockOnBoot:true,theme:'dark',accent:'#4f8cff',wallpaper:{type:'preset',id:'kai-aurora',value:0},
  taskbarPos:'bottom',tbCenter:false,tbSize:50,tbLabels:true,iconSize:56,iconLabels:true,showDesktopIcons:true,font:'system',fontSize:14,radius:12,blur:true,transparency:.78,animations:true,
  clock24:false,showSeconds:false,customCSS:'',searchEngine:'bing',browserHome:'start',
- installed:['notepad','calculator','terminal','paint','coderunner','snake'],customApps:[],pinned:['browser','files','store','settings'],hiddenDesk:[],snakeBest:0,bookmarks:[],fsGrants:{},cfgVersion:2};
+ installed:['notepad','calculator','terminal','paint','coderunner','snake'],customApps:[],pinned:['browser','files','appetite','settings'],hiddenDesk:[],snakeBest:0,bookmarks:[],fsGrants:{},cfgVersion:2};
 let cfg=structuredClone(DEFAULTS);
 const saveCfgNow=()=>KV.set('config',cfg);const saveCfg=debounce(saveCfgNow,250);
 function setCfg(k,v){cfg[k]=v;applyConfig();if(k==='wallpaper')saveCfgNow();else saveCfg();emit('cfg',k);} // wallpaper picks are discrete: save at once so a quick reload keeps them
@@ -559,7 +559,7 @@ const FS={
  all(){return Object.keys(fsData).filter(k=>fsData[k].t==='f').sort()},
  _save:debounce(()=>KV.set('fs',fsData),300),save(){this._save();emit('fs');}};
 function defaultFS(){fsData={'/':{t:'d',m:Date.now()}};['/Desktop','/Documents','/Pictures','/Music','/Projects'].forEach(d=>fsData[d]={t:'d',m:Date.now()});
- fsData['/Documents/Welcome.txt']={t:'f',m:Date.now(),c:`Welcome to Nova OS, ${cfg.user}!\n\nThis whole operating system lives in a single HTML file and runs offline.\n\nTips:\n • Right-click the desktop for options.\n • Open the App Store to install more apps, or install your own .html apps.\n • Settings lets you change wallpaper, colors, taskbar position, fonts and more.\n • Drag windows by their title bar, drag to the top edge to maximize.\n • Everything you save is stored in your browser (IndexedDB).\n • Use File Manager to import/export files from your real computer.\n`};
+ fsData['/Documents/Welcome.txt']={t:'f',m:Date.now(),c:`Welcome to Nova OS, ${cfg.user}!\n\nThis whole operating system lives in a single HTML file and runs offline.\n\nTips:\n • Right-click the desktop for options.\n • Open Appetite to install more apps, or install your own .html apps.\n • Settings lets you change wallpaper, colors, taskbar position, fonts and more.\n • Drag windows by their title bar, drag to the top edge to maximize.\n • Everything you save is stored in your browser (IndexedDB).\n • Use File Manager to import/export files from your real computer.\n`};
  fsData['/Desktop/Read me.txt']={t:'f',m:Date.now(),c:'Files you put in /Desktop show up right here on the desktop.\nDouble-click to open.\n'};
  fsData['/Projects/hello.html']={t:'f',m:Date.now(),c:'<!doctype html>\n<html><head><style>body{font-family:sans-serif;display:grid;place-items:center;height:100vh;margin:0;background:linear-gradient(135deg,#4f8cff,#b04dff);color:#fff}</style></head>\n<body><h1 id="h">Hello from Nova OS!</h1>\n<script>let n=0;document.body.onclick=()=>h.textContent="Clicked "+(++n)+" times";<\/script></body></html>'};}
 
@@ -584,7 +584,7 @@ function tileEl(app,cls=''){const t=el('div',{class:'tile '+cls,style:{'--c1':(a
 const SYSTEM={
  browser:{name:'Browser',icon:ART.browser||'🌐',c:['#1e3a8a','#0f172a'],desc:'Browse the web with tabs.',w:1000,h:680,open:(w,a)=>appBrowser(w,a)},
  files:{name:'File Manager',icon:ART.files||'📁',c:['#f59e0b','#f97316'],desc:'Manage your files.',w:780,h:500,open:(w,a)=>appFiles(w,a)},
- store:{name:'App Store',icon:ART.store||'🛍️',c:['#ec4899','#8b5cf6'],desc:'Get more apps.',w:900,h:620,single:true,open:(w,a)=>{w.close();openApp('appetite',a)}},
+ store:{name:'Appetite',icon:ART.store||'🛍️',c:['#ec4899','#8b5cf6'],desc:'Get more apps.',w:900,h:620,single:true,hidden:true,open:(w,a)=>{w.close();openApp('appetite',a)}}, // v9: hidden alias of 'appetite' (old pins/shortcuts/openApp('store'))
  settings:{name:'Settings',icon:ART.settings||'⚙️',c:['#64748b','#334155'],desc:'Customize everything.',w:880,h:620,single:true,open:(w,a)=>appSettings(w,a)},
  photos:{name:'Photos',icon:ART.photos||'🖼️',c:['#ffb347','#ff6f91'],desc:'Photos by Moneyman: gallery, viewer, slideshow, rotate and crop for your Pictures folder.',w:980,h:640,open:w=>{if(!PHOTOS_HTML)return w.body.append(el('p',{style:{padding:'20px'}},'Photos is not bundled in this build.'));appCustom(w,{type:'html',html:PHOTOS_HTML})}}};
 const CATALOG={
@@ -614,7 +614,10 @@ function getApp(id){if(SYSTEM[id])return{id,system:true,...SYSTEM[id]};if(CATALO
 const EXT_ART={'appetite-w-living-world':'living-world','appetite-w-photos':'photos','appetite-w-weather':'breezy-weather','appetite-w-todo':'tidy-todo','appetite-w-breakout':'brick-pop','appetite-w-sketch':'doodle-pad'};
 const extArt=a=>a&&a.extId&&EXT_ART[a.extId]&&ART[EXT_ART[a.extId]]||null;
 function isInstalled(id){return!!SYSTEM[id]||cfg.installed.includes(id)||cfg.customApps.some(a=>a.id===id);}
-function installedApps(){return[...Object.keys(SYSTEM),...cfg.installed.filter(i=>CATALOG[i]),...cfg.customApps.map(a=>a.id)].map(getApp).filter(Boolean);}
+function installedApps(){return[...Object.keys(SYSTEM),...cfg.installed.filter(i=>CATALOG[i]),...cfg.customApps.map(a=>a.id)].map(getApp).filter(a=>a&&!a.hidden);}
+/* v9: one store. 'store' is a hidden alias of 'appetite'; saved pin/desktop lists from older builds collapse into 'appetite' (no duplicates). */
+const storeId=id=>id==='store'?'appetite':id;
+function normStoreIds(c){if(!c)return c;for(const k of['pinned','hiddenDesk'])if(Array.isArray(c[k])){const o=[];for(const x of c[k]){const y=storeId(x);if(!o.includes(y))o.push(y)}c[k]=o}return c;}
 function install(id){if(CATALOG[id]&&!cfg.installed.includes(id)){cfg.installed.push(id);cfg.hiddenDesk=cfg.hiddenDesk.filter(x=>x!==id);saveCfg();emit('apps');toast(CATALOG[id].name+' installed','✅');}}
 async function uninstall(id,noconfirm){const a=getApp(id);if(!a||a.system)return false;if(!noconfirm&&!await confirmBox(`Uninstall ${a.name}?`,'Uninstall app','Uninstall',true))return false;
  [...WM.wins.values()].filter(w=>w.appId===id).forEach(w=>w.close(true));cfg.installed=cfg.installed.filter(x=>x!==id);cfg.customApps=cfg.customApps.filter(x=>x.id!==id);cfg.pinned=cfg.pinned.filter(x=>x!==id);if(cfg.fsGrants)delete cfg.fsGrants[id];saveCfg();emit('apps');toast(a.name+' uninstalled','🗑️');return true;}
@@ -667,7 +670,7 @@ function createWin({title,icon,app,w=640,h=440,appId}){
 window.addEventListener('blur',()=>setTimeout(()=>{const a=document.activeElement;if(a&&a.tagName==='IFRAME'){const we=a.closest('.win');const w=we&&[...WM.wins.values()].find(x=>x.el===we);w&&w.focus();closeStart();closeCtx();}},0));
 
 /* ============ taskbar / start / desktop ============ */
-function renderTasks(){const T=$('#tasks');if(!T)return;T.innerHTML='';const wins=[...WM.wins.values()];
+function renderTasks(){const T=$('#tasks');if(!T)return;T.innerHTML='';normStoreIds(cfg);const wins=[...WM.wins.values()];
  cfg.pinned.filter(isInstalled).forEach(id=>{const a=getApp(id),ws=wins.filter(w=>w.appId===id);if(!a)return;const b=el('button',{class:'tbtn'+(ws.length?' running':'')+(ws.includes(WM.active)?' active':''),title:a.name},tileEl(a,'sm'),cfg.tbLabels&&ws.length===1?el('span',{},ws[0].title):null);
   b.onclick=()=>{if(!ws.length)return openApp(id);const w=ws.includes(WM.active)?WM.active:ws[ws.length-1];(WM.active===w&&!w.el.classList.contains('min'))?w.minimize():w.restore();};
   b.oncontextmenu=ev=>{ev.preventDefault();ctxMenu(ev.clientX,ev.clientY,[{icon:'＋',label:'New window',fn:()=>openApp(id)},{icon:'📌',label:'Unpin from taskbar',fn:()=>togglePin(id)},ws.length&&{icon:'✕',label:'Close all windows',fn:()=>ws.forEach(w=>w.close())}])};T.append(b);
@@ -675,8 +678,8 @@ function renderTasks(){const T=$('#tasks');if(!T)return;T.innerHTML='';const win
  wins.filter(w=>!cfg.pinned.includes(w.appId)).forEach(w=>T.append(winBtn(w)));}
 function winBtn(w){const b=el('button',{class:'tbtn running'+(WM.active===w?' active':''),title:w.title},tileEl(w.app||{icon:w.icon},'sm'),cfg.tbLabels?el('span',{},w.title):null);b.onclick=()=>(WM.active===w&&!w.el.classList.contains('min'))?w.minimize():w.restore();
  b.oncontextmenu=ev=>{ev.preventDefault();ctxMenu(ev.clientX,ev.clientY,[{icon:'📌',label:cfg.pinned.includes(w.appId)?'Unpin':'Pin to taskbar',fn:()=>togglePin(w.appId)},{icon:'✕',label:'Close',fn:()=>w.close()}])};return b;}
-function togglePin(id){cfg.pinned=cfg.pinned.includes(id)?cfg.pinned.filter(x=>x!==id):[...cfg.pinned,id];saveCfg();renderTasks();}
-function toggleDesk(id){cfg.hiddenDesk=cfg.hiddenDesk.includes(id)?cfg.hiddenDesk.filter(x=>x!==id):[...cfg.hiddenDesk,id];saveCfg();renderDesktop();}
+function togglePin(id){id=storeId(id);normStoreIds(cfg);cfg.pinned=cfg.pinned.includes(id)?cfg.pinned.filter(x=>x!==id):[...cfg.pinned,id];saveCfg();renderTasks();}
+function toggleDesk(id){id=storeId(id);normStoreIds(cfg);cfg.hiddenDesk=cfg.hiddenDesk.includes(id)?cfg.hiddenDesk.filter(x=>x!==id):[...cfg.hiddenDesk,id];saveCfg();renderDesktop();}
 function appMenu(ev,a){ev.preventDefault();ev.stopPropagation();ctxMenu(ev.clientX,ev.clientY,[{icon:'▶',label:'Open',fn:()=>openApp(a.id)},{icon:'📌',label:cfg.pinned.includes(a.id)?'Unpin from taskbar':'Pin to taskbar',fn:()=>togglePin(a.id)},{icon:'🖥',label:cfg.hiddenDesk.includes(a.id)?'Show on desktop':'Remove from desktop',fn:()=>toggleDesk(a.id)},!a.system&&'-',!a.system&&{icon:'🗑',label:'Uninstall',fn:()=>uninstall(a.id)}]);}
 function renderStart(){const S=$('#startmenu');S.innerHTML='';const q=el('input',{class:'sm-search',placeholder:'Search apps, files, or the web…'});const grid=el('div',{class:'sm-grid'});let hits=[];
  const draw=()=>{grid.innerHTML='';const t=q.value.trim().toLowerCase();hits=installedApps().filter(a=>!t||a.name.toLowerCase().includes(t));hits.forEach((a,i)=>grid.append(el('button',{class:'sm-app'+(t&&i===0?' hl':''),onclick:()=>openApp(a.id),oncontextmenu:ev=>appMenu(ev,a)},tileEl(a),a.name)));
@@ -692,7 +695,7 @@ function renderStart(){const S=$('#startmenu');S.innerHTML='';const q=el('input'
 function avatarEl(cls=''){const a=el('div',{class:'avatar '+cls});if(cfg.avatarId&&!cfg.avatarImg&&typeof avatarFace==='function'){const f=avatarFace(cfg.avatarId,cls);return f}if(cfg.avatarImg)a.append(el('img',{src:cfg.avatarImg,style:{width:'100%',height:'100%',objectFit:'cover'}}));else a.textContent=cfg.avatar;return a;}
 function toggleStart(){const S=$('#startmenu');if(S.classList.contains('open'))return closeStart();$('#calpop').classList.remove('open');const q=renderStart();S.classList.add('open');setTimeout(()=>q.focus(),30);}
 function closeStart(){$('#startmenu').classList.remove('open')}
-function renderDesktop(){const I=$('#icons');I.innerHTML='';
+function renderDesktop(){const I=$('#icons');I.innerHTML='';normStoreIds(cfg);
  const mk=(label,tile,open,menu)=>{const d=el('div',{class:'dicon',tabindex:'0'},tile,el('div',{class:'lbl'},label));d.onclick=e=>{$$('.dicon.sel').forEach(x=>x.classList.remove('sel'));d.classList.add('sel');e.stopPropagation()};d.ondblclick=open;d.onkeydown=e=>{if(e.key==='Enter')open()};d.oncontextmenu=menu;I.append(d)};
  installedApps().filter(a=>!cfg.hiddenDesk.includes(a.id)).forEach(a=>mk(a.name,tileEl(a),()=>openApp(a.id),ev=>appMenu(ev,a)));
  FS.list('/Desktop').forEach(f=>{const t=el('div',{class:'tile',style:{'--c1':'rgba(255,255,255,.18)','--c2':'rgba(255,255,255,.06)'}});const im=isImage(f.path)&&f.c;if(im)t.append(el('img',{src:f.c}));else t.textContent=f.t==='d'?'📁':fileIcon(f.path);
@@ -892,7 +895,7 @@ function appTerminal(win){let cwd='/',hist=[],hi=0;const out=el('div',{class:'te
   cp:a=>{if(!FS.exists(R(a[0]||'')))return print('cp: no such file','er');FS.copy(R(a[0]),R(a[1]))},
   tree:a=>{const lines=[];const walk=(d,pre)=>{const l=FS.list(d);l.forEach((f,i)=>{const last=i===l.length-1;lines.push(pre+(last?'└── ':'├── ')+f.name+(f.t==='d'?'/':''));if(f.t==='d')walk(f.path,pre+(last?'    ':'│   '))})};lines.push(R(a[0]||'.'));walk(R(a[0]||'.'),'');print(lines.join('\n'))},
   edit:a=>{const p=R(a[0]||'untitled.txt');if(!FS.exists(p))FS.write(p,'');openApp('notepad',{path:p})},
-  open:a=>{const n=a.join(' ');if(!n)return print('usage: open <app|file>','er');const p=R(n);if(FS.exists(p)&&!FS.isDir(p))return openFile(p);if(FS.isDir(p))return openApp('files',{dir:p});const app=installedApps().find(x=>x.id===n.toLowerCase()||x.name.toLowerCase()===n.toLowerCase());app?openApp(app.id):print('open: unknown app or file: '+n,'er')},
+  open:a=>{const n=a.join(' ');if(!n)return print('usage: open <app|file>','er');const p=R(n);if(FS.exists(p)&&!FS.isDir(p))return openFile(p);if(FS.isDir(p))return openApp('files',{dir:p});const app=installedApps().find(x=>x.id===storeId(n.toLowerCase())||x.name.toLowerCase()===n.toLowerCase());app?openApp(app.id):print('open: unknown app or file: '+n,'er')},
   apps:()=>print(installedApps().map(a=>`${a.icon} ${a.id.padEnd(12)} ${a.name}`).join('\n')+'\n\nAvailable in store: '+Object.keys(CATALOG).filter(k=>!isInstalled(k)).join(', ')),
   install:a=>{if(!CATALOG[a[0]])return print('install: unknown app. Try: '+Object.keys(CATALOG).join(', '),'er');install(a[0]);print('installed '+a[0],'ac')},
   uninstall:a=>uninstall(a[0]),
@@ -1633,7 +1636,7 @@ function avatarFace(id,cls=''){id=safeAvatarId(id);const d=el('div',{class:'avat
 const SAFE_IMG=/^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=]+$/;
 /* Magic-link / reset / confirmation emails come back here: the current page when it is https (or a localhost dev
    server), otherwise (file://, plain http) the permanent home. That origin must be in Supabase's Redirect URLs. */
-const NOVA_HOME='https://nova-os.pages.dev/'; // primary home (Cloudflare Pages); Netlify is the backup
+const NOVA_HOME='https://cooloutlawsstudio.github.io/nova-os/'; // primary home (GitHub Pages, = Supabase Site URL); used as the sign-in redirect when the OS runs from file:// or plain http
 const authRedirect=()=>location.protocol==='https:'||/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(location.origin)?location.origin+location.pathname:NOVA_HOME;
 const AUTH_P='novaauth:',SB_SESSION_KEY='nova-cloud-auth';
 const withTimeout=(p,ms,msg)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error(msg||'timed out'),{offline:true})),ms))]);
@@ -1660,7 +1663,7 @@ const AUTH={
  stored(){try{const s=JSON.parse(localStorage.getItem(SB_SESSION_KEY)||'null');const u=s&&(s.user||s.currentSession&&s.currentSession.user);return u&&u.id?{id:String(u.id),email:String(u.email||'')}:null}catch(e){return null}},
  clear(){try{localStorage.removeItem(SB_SESSION_KEY);localStorage.removeItem(SB_SESSION_KEY+'-code-verifier')}catch(e){}}};
 
-const ACCT={mode:'guest',uid:null,email:'',profile:null,meta:null,started:false,applying:false,justSignedIn:false,cfgB:null,_init:null,fsBase:false,status:'off',err:'',
+const ACCT={holdSync:false,mode:'guest',uid:null,email:'',profile:null,meta:null,started:false,applying:false,justSignedIn:false,cfgB:null,_init:null,fsBase:false,status:'off',err:'',
  enabled(){return!!this.cfgB},
  ensureCloud(){if(!this.cfgB)return Promise.reject(new Error('No account server is set up'));
   if(!this._init)this._init=NovaCloud.init({url:this.cfgB.url,anonKey:this.cfgB.anonKey,redirectTo:authRedirect()}).catch(e=>{this._init=null;throw e});
@@ -1728,10 +1731,12 @@ const ACCT={mode:'guest',uid:null,email:'',profile:null,meta:null,started:false,
   setInterval(()=>{if(!document.hidden&&Date.now()-(this.lastRefresh||0)>120000)this.refresh()},30000);
   try{await withTimeout(this.ensureCloud(),20000)}catch(e){this.setStatus(navigator.onLine?'error':'offline',e.message);return}
   if(!NovaCloud.user){if(navigator.onLine){this.signingOut=false;toast('Please sign in again to sync.','🔑',5000);}return}
-  if(M.isNew)await this.offerMigration();
+  // v9: while "Bring your guest setup?" is open, nothing syncs (no refresh timer, no settings/file pushes), so the default
+  // Read me / Welcome files and default settings are never uploaded before the user answers.
+  if(M.isNew){this.holdSync=true;try{await this.offerMigration()}finally{this.holdSync=false}}
   await this.loadProfile();await this.refresh();},
  /* ---- pull + merge + push. Local edits since the last sync win; untouched local copies take the server version. ---- */
- async refresh(){if(this.mode!=='user'||!this.started||!navigator.onLine||!NovaCloud.user)return;if(this._ref)return this._ref;
+ async refresh(){if(this.holdSync||this.mode!=='user'||!this.started||!navigator.onLine||!NovaCloud.user)return;if(this._ref)return this._ref;
   this._ref=(async()=>{this.setStatus('syncing');try{const M=this.meta;this.lastRefresh=Date.now();
    await NovaCloud.flush();
    // settings
@@ -1758,11 +1763,11 @@ const ACCT={mode:'guest',uid:null,email:'',profile:null,meta:null,started:false,
    catch(e){this.fail(e)}finally{this._ref=null}})();return this._ref;},
  async applying_(fn){this.applying=true;try{await fn()}finally{this.applying=false}},
  async applyRemoteSettings(data){await this.applying_(async()=>{const keep={pass:cfg.pass,fsGrants:cfg.fsGrants,customApps:cfg.customApps,lockOnBoot:cfg.lockOnBoot};
-  const c=this.cleanRemote(Object.assign({},data));cfg=Object.assign(structuredClone(DEFAULTS),c,keep);cfg.wallpaper=migrateWallpaper(c.wallpaper,{version:c.cfgVersion});cfg.cfgVersion=CFG_VERSION;
+  const c=this.cleanRemote(Object.assign({},data));cfg=normStoreIds(Object.assign(structuredClone(DEFAULTS),c,keep));cfg.wallpaper=migrateWallpaper(c.wallpaper,{version:c.cfgVersion});cfg.cfgVersion=CFG_VERSION;
   if(this.profile)this.applyProfile(this.profile,false,true);await saveCfgNow();applyConfig();renderDesktop();renderTasks();emit('apps')});this.meta.cfgHash=this.cfgHashOf(cfg);},
  fail(e){if(e&&(e.offline||e.name==='OfflineError')){this.setStatus('offline');return}console.warn('Sync:',e&&e.message);this.setStatus('error',e&&e.message||'error');},
  /* ---- local change hook (every KV.set of config/fs) ---- */
- localChanged(k){if(this.mode!=='user'||!this.started||this.applying||!NovaCloud.user)return;
+ localChanged(k){if(this.holdSync||this.mode!=='user'||!this.started||this.applying||!NovaCloud.user)return;
   if(k==='config'){const h=this.cfgHashOf(cfg),M=this.meta;
    if(h!==M.cfgHash&&!M.legacyCfg){const wp=stableJSON(cfg.wallpaper)!==this._lastWp;this._lastWp=stableJSON(cfg.wallpaper);
     NovaCloud.saveSettings(cfg,{immediate:wp}).then(r=>{if(r&&(r.ok||r.queued)){M.cfgHash=h;this.saveMeta()}this.setStatus(r&&r.ok?'ok':undefined)}).catch(e=>this.fail(e));}
@@ -1773,7 +1778,7 @@ const ACCT={mode:'guest',uid:null,email:'',profile:null,meta:null,started:false,
    if(this.profile&&cfg.user!==this.profile.display_name)this.saveProfile(cfg.user,this.profile.avatar);}
   if(k==='fs'&&this.fsBase)this.fsSync();},
  fsSync:null,
- async pushFs(){if(!this.fsBase||!NovaCloud.user)return;try{this.setStatus('syncing');const r=await NovaCloud.syncFs(fsData);this.meta.snap=this.snapFs(fsData);await this.saveMeta();this.setStatus(r.queued?'offline':'ok')}catch(e){this.fail(e)}},
+ async pushFs(){if(this.holdSync||!this.fsBase||!NovaCloud.user)return;try{this.setStatus('syncing');const r=await NovaCloud.syncFs(fsData);this.meta.snap=this.snapFs(fsData);await this.saveMeta();this.setStatus(r.queued?'offline':'ok')}catch(e){this.fail(e)}},
  pending(){return this.mode==='user'?NovaCloud.pendingCount():0},
  onCloudStatus(s,info){if(this.mode!=='user')return;this.setStatus(s==='online'?'ok':s,info&&info.error&&info.error.message);},
  setStatus(s,err){if(s)this.status=s;if(s==='error')this.err=err||'';if(this.mode==='user'&&!navigator.onLine)this.status='offline';
@@ -1802,7 +1807,7 @@ const ACCT={mode:'guest',uid:null,email:'',profile:null,meta:null,started:false,
   if(hasGuest&&await dialog({title:'Bring your guest setup?',body:el('p',{style:{margin:'4px 0',lineHeight:1.5}},'This account is new. Copy the wallpaper, theme, apps and files you set up as a guest on this device into it? The guest copy stays as it is.'),
    buttons:[{label:'Start fresh',value:false},{label:'Copy my setup',value:true,primary:true}]})){
    try{await this.applying_(async()=>{const keep={pass:cfg.pass,fsGrants:{},user:cfg.user,avatarId:cfg.avatarId};
-     if(gc){cfg=Object.assign(structuredClone(DEFAULTS),gc,keep);cfg.wallpaper=migrateWallpaper(gc.wallpaper,{version:gc.cfgVersion});cfg.cfgVersion=CFG_VERSION;}
+     if(gc){cfg=normStoreIds(Object.assign(structuredClone(DEFAULTS),gc,keep));cfg.wallpaper=migrateWallpaper(gc.wallpaper,{version:gc.cfgVersion});cfg.cfgVersion=CFG_VERSION;}
      if(gf&&gf['/'])fsData=structuredClone(gf);if(!FS.exists('/Pictures'))FS.mkdir('/Pictures');
      await saveCfgNow();await KV.set('fs',fsData);applyConfig();renderDesktop();renderTasks();emit('apps');emit('fs');
      const r=await NovaCloud.migrateGuest({cfg,fsData});if(r.failed&&r.failed.length)console.warn('Some items could not be copied:',r.failed.length);});
@@ -1934,7 +1939,7 @@ function appSettings(win,arg){const side=el('div',{class:'sidebar'}),main=el('di
    return[el('h2',{},'Advanced'),el('div',{class:'srow',style:{flexDirection:'column',alignItems:'stretch'}},el('div',{},'Custom CSS',el('small',{class:'muted',style:{display:'block'}},'Restyle anything. Variables: --accent, --radius, --font, --tb, --icon, --alpha')),css,el('div',{style:{display:'flex',gap:'8px'}},el('button',{class:'btn primary',onclick:()=>{setCfg('customCSS',css.value);toast('Custom CSS applied','🎨')}},'Apply'),el('button',{class:'btn',onclick:()=>{css.value='';setCfg('customCSS','')}},'Clear'))),
     row('App file access',(()=>{const g=Object.entries(cfg.fsGrants||{}).filter(([,r])=>r&&r.length);return g.length?g.map(([k,r])=>(getApp(k)?.name||k)+': '+r.map(x=>x.slice(1)).join(', ')).join(' · '):'No app has access to your folders'})(),el('button',{class:'btn',onclick:()=>{setCfg('fsGrants',{});toast('File access revoked for all apps','🔒');draw()}},'Revoke all')),
     row('Export configuration','Saves all settings and installed apps as a JSON file',el('label',{class:'muted',style:{display:'flex',gap:'5px',alignItems:'center',fontSize:'12px'}},incl,'include files'),el('button',{class:'btn',onclick:()=>download('nova-os-config.json',JSON.stringify({novaOS:1,exported:new Date().toISOString(),config:cfg,files:incl.checked?fsData:undefined},null,1),'application/json')},'⬇ Export')),
-    row('Import configuration','Load a previously exported JSON file',el('button',{class:'btn',onclick:async()=>{const[f]=await pickRealFile('.json,application/json');if(!f)return;try{const d=JSON.parse(await readText(f));if(!d.config)throw new Error('Not a Nova OS config file');cfg=Object.assign(structuredClone(DEFAULTS),d.config);{const fc=d.files&&d.files['/']&&d.files['/'].m,ex=Date.parse(d.exported||'');cfg.wallpaper=migrateWallpaper(d.config.wallpaper,{version:d.config.cfgVersion,fsCreated:typeof fc==='number'?fc:isNaN(ex)?undefined:ex});}cfg.cfgVersion=CFG_VERSION;if(d.files&&await confirmBox('This file also contains files. Replace your current files with them?'))fsData=d.files,KV.set('fs',fsData);await saveCfgNow();applyConfig();emit('apps');renderTasks();renderDesktop();draw();toast('Configuration imported','✅')}catch(e){alertBox('Import failed: '+e.message)}}},'⬆ Import')),
+    row('Import configuration','Load a previously exported JSON file',el('button',{class:'btn',onclick:async()=>{const[f]=await pickRealFile('.json,application/json');if(!f)return;try{const d=JSON.parse(await readText(f));if(!d.config)throw new Error('Not a Nova OS config file');cfg=normStoreIds(Object.assign(structuredClone(DEFAULTS),d.config));{const fc=d.files&&d.files['/']&&d.files['/'].m,ex=Date.parse(d.exported||'');cfg.wallpaper=migrateWallpaper(d.config.wallpaper,{version:d.config.cfgVersion,fsCreated:typeof fc==='number'?fc:isNaN(ex)?undefined:ex});}cfg.cfgVersion=CFG_VERSION;if(d.files&&await confirmBox('This file also contains files. Replace your current files with them?'))fsData=d.files,KV.set('fs',fsData);await saveCfgNow();applyConfig();emit('apps');renderTasks();renderDesktop();draw();toast('Configuration imported','✅')}catch(e){alertBox('Import failed: '+e.message)}}},'⬆ Import')),
     row('Reset to defaults','Restores default settings. Keeps your files.',el('button',{class:'btn danger',onclick:async()=>{if(!await confirmBox('Reset all settings and remove installed apps?','Reset settings','Reset',true))return;cfg=structuredClone(DEFAULTS);await saveCfgNow();applyConfig();emit('apps');renderTasks();renderDesktop();draw();toast('Settings reset','↺')}},'Reset settings')),
     row('Factory reset','Erases EVERYTHING: settings, apps and files',el('button',{class:'btn danger',onclick:async()=>{if(await confirmBox('This erases all settings, apps and files stored by Nova OS in this browser. Continue?','Factory reset','Erase everything',true)){await KV.clear();location.reload()}}},'Erase everything'))];}],
   shortcuts:['⌨️','Shortcuts',()=>[el('h2',{},'Keyboard shortcuts'),el('p',{class:'muted',style:{marginTop:0,lineHeight:1.5}},'Shortcuts work when the OS itself has keyboard focus. Clicking inside an app or web page that runs in a frame sends keys to that page instead; click the title bar or desktop first. You can also switch windows with the ⧉ button in the taskbar.'),...SHORTCUTS.map(([k,d])=>row(el('span',{},k.split(/\s+or\s+/).map((x,i)=>[i?' or ':'',...x.split(' / ').map((y,j)=>[j?' / ':'',el('span',{class:'kbd'},y.trim())])])),d))]],
@@ -1970,7 +1975,7 @@ window.addEventListener('message',e=>{const d=e.data;if(!d||typeof d!=='object'|
  if(d.type==='nova-key')return handleFrameKey(d,src);
  const rq=(typeof d.reqId==='string'&&d.reqId.length<=100)||(typeof d.reqId==='number'&&isFinite(d.reqId))?d.reqId:undefined;
  const send=m=>{try{src.postMessage(rq===undefined?m:Object.assign({},m,{reqId:rq}),'*')}catch(_){}}; /* every reply echoes reqId */const fw=[...WM.wins.values()].find(w=>[...w.el.querySelectorAll('iframe')].some(f=>f.contentWindow===src));const origin=fw?`“${fw.title}”`+(e.origin&&e.origin!=='null'?' ('+e.origin+')':''):(e.origin&&e.origin!=='null'?e.origin:'an app running in '+cfg.osName);
- // Appetite = the built-in Appetite Store window's own top frame (not its nested preview frames, not any other app)
+ // Appetite = the built-in store window's (appId 'appetite', shown as "Appetite") own top frame (not its nested preview frames, not any other app)
  const fromAppetite=!!fw&&fw.appId==='appetite'&&appetiteFrames().some(f=>f.contentWindow===src);
  if(d.type==='nova-appetite-ls'){if(fromAppetite)saveAppetiteLS(d.data);return;}
  if(typeof d.type==='string'&&STORE_RELAY.has(d.type)){if(!fromAppetite){console.warn('Ignored '+d.type+': only the built-in Appetite Store may use the store relay');return}storeRelay(d,send,src,origin);return;}
@@ -2063,13 +2068,13 @@ function appetiteWithStorage(){const data=JSON.stringify(APPETITE_LS).replace(/<
  return /<head[^>]*>/i.test(APPETITE_HTML)?APPETITE_HTML.replace(/<head[^>]*>/i,m=>m+shim):shim+APPETITE_HTML;}
 function saveAppetiteLS(data){if(!data||typeof data!=='object'||Array.isArray(data))return;const o={};let n=0;
  for(const[k,v]of Object.entries(data)){if(typeof v!=='string')continue;n+=k.length+v.length;if(n>APPETITE_LS_MAX)return;o[String(k).slice(0,200)]=v}APPETITE_LS=o;KV.set('appetite-ls',o);}
-SYSTEM.appetite={name:'Appetite Store',icon:'🍩',c:['#f97316','#ec4899'],desc:'Community app store.',w:1040,h:700,single:true,open:w=>{if(!APPETITE_HTML){w.body.append(el('p',{style:{padding:'20px'}},'Appetite store is not bundled in this build.'));return}appCustom(w,{type:'html',html:appetiteWithStorage()}) /* v6: no allow-same-origin, so Appetite can never read the OS origin's storage or tokens */}};
+SYSTEM.appetite={name:'Appetite',icon:ART.store||'🛍️',c:['#ec4899','#8b5cf6'],desc:'The app store: featured, official and community apps.',w:1040,h:700,single:true,open:w=>{if(!APPETITE_HTML){w.body.append(el('p',{style:{padding:'20px'}},'Appetite store is not bundled in this build.'));return}appCustom(w,{type:'html',html:appetiteWithStorage()}) /* v6: no allow-same-origin, so Appetite can never read the OS origin's storage or tokens */}};
 
 /* ============ boot ============ */
 async function boot(){const pb=$('#boot .pb i');pb.style.width='20%';
  await KV.init();await ACCT.boot();await ACCT.prepare();pb.style.width='45%';
  const saved=await KV.get('config');const fsd=await KV.get('fs');
- if(saved&&typeof saved==='object'){cfg=Object.assign(structuredClone(DEFAULTS),saved);cfg.wallpaper=migrateWallpaper(saved.wallpaper,{version:saved.cfgVersion,fsCreated:fsd&&fsd['/']&&fsd['/'].m});cfg.cfgVersion=CFG_VERSION;}
+ if(saved&&typeof saved==='object'){cfg=normStoreIds(Object.assign(structuredClone(DEFAULTS),saved));cfg.wallpaper=migrateWallpaper(saved.wallpaper,{version:saved.cfgVersion,fsCreated:fsd&&fsd['/']&&fsd['/'].m});cfg.cfgVersion=CFG_VERSION;}
  if(fsd&&fsd['/'])fsData=fsd;else{defaultFS();KV.set('fs',fsData);}
  if(!FS.exists('/Pictures'))FS.mkdir('/Pictures'); // Photos and the file bridge expect it
  {const ls=await KV.get('appetite-ls');if(ls&&typeof ls==='object')APPETITE_LS=ls;}
