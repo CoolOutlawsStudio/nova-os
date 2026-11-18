@@ -27,7 +27,7 @@ Do not move or rename files independently. They must be served together from the
 
 1. Serve this entire directory over **HTTPS**. Service workers and “Add to Home Screen” / standalone display will not work on `file://`, and iOS Safari requires HTTPS (localhost is allowed only for development).
 2. Keep the directory structure intact. The service worker can only cache and control pages under its scope, which is this folder (`./`).
-3. After you change `index.html`, icons, the manifest, the vendored library, or the worker itself, **bump the cache version** in `sw.js` (`CACHE_NAME`, currently `nova-os-offline-v1`). If you skip this, browsers will keep serving the old cached shell.
+3. After you change `index.html`, icons, the manifest, the vendored library, or the worker itself, **bump the cache version** in `sw.js` (`CACHE_NAME`, currently `nova-os-offline-v2`). If you skip this, browsers will keep serving the old cached shell.
 4. GitHub Pages: publish this folder as the `/nova-os/` site (or as a `nova-os` directory in the Pages repo). Visit `https://<user>.github.io/nova-os/`.
 5. Render / Netlify / Cloudflare: publish this folder as a static site at the root. No build command is required.
 
